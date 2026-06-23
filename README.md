@@ -42,7 +42,7 @@ await auth.logout();
 ```typescript
 const auth = new GhaymaAuth({
   appSlug: "my-app",                               // Required — your Auth App slug
-  baseUrl: "https://auth.espace-tech.com",          // Default
+  baseUrl: "https://auth.ghayma.tech",              // Default
   storage: "memory",                                // "memory" (default) or "localStorage"
   autoRefresh: true,                                // Auto-refresh before expiry (default: true)
 });
@@ -51,7 +51,7 @@ const auth = new GhaymaAuth({
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `appSlug` | `string` | — | **Required.** Your Auth App slug from the dashboard |
-| `baseUrl` | `string` | `https://auth.espace-tech.com` | Auth service base URL |
+| `baseUrl` | `string` | `https://auth.ghayma.tech` | Auth service base URL |
 | `storage` | `"memory" \| "localStorage"` | `"memory"` | Token storage strategy |
 | `autoRefresh` | `boolean` | `true` | Auto-refresh tokens before they expire |
 

@@ -39,7 +39,7 @@ export type {
   User,
 };
 
-const DEFAULT_BASE_URL = "https://auth.espace-tech.com";
+const DEFAULT_BASE_URL = "https://auth.ghayma.tech";
 
 export class GhaymaAuth {
   private http: HttpClient;
