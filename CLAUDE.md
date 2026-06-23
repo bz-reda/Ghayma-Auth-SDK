@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-`@espace-tech/auth` — a zero-dependency client-side authentication SDK for Espace-Tech Cloud Auth. Works in browsers, Node.js 18+, Deno, Bun, and React Native (requires native `fetch`).
+`@ghayma/auth` — a zero-dependency client-side authentication SDK for Ghayma Auth. Works in browsers, Node.js 18+, Deno, Bun, and React Native (requires native `fetch`).
 
 ## Commands
 
@@ -18,9 +18,9 @@ No test framework is configured yet.
 
 Four source files in `src/`, single entry point:
 
-- **`index.ts`** — `EspaceAuth` class (the public API). Orchestrates auth flows (register, login, logout, OAuth, password reset, user profile) and manages auto-refresh scheduling and auth state event listeners.
+- **`index.ts`** — `GhaymaAuth` class (the public API; `EspaceAuth` is exported as a deprecated back-compat alias). Orchestrates auth flows (register, login, logout, OAuth, password reset, user profile) and manages auto-refresh scheduling and auth state event listeners.
 - **`client.ts`** — `HttpClient` class. Internal HTTP layer using native `fetch`. All requests go to `{baseUrl}/v1/{appSlug}{path}`. Handles auth headers, timeouts (15s default), and maps errors to `AuthError`.
-- **`token.ts`** — `TokenManager` class. Stores access/refresh tokens with expiry tracking. Supports `"memory"` or `"localStorage"` strategies. localStorage key: `espace_auth_session`.
+- **`token.ts`** — `TokenManager` class. Stores access/refresh tokens with expiry tracking. Supports `"memory"` or `"localStorage"` strategies. localStorage key: `espace_auth_session` (kept unchanged across the Ghayma rebrand so existing users stay signed in — do not rename).
 - **`types.ts`** — All TypeScript interfaces, param types, event types, and the `AuthError` class.
 
 ## Key Patterns

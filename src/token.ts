@@ -8,6 +8,8 @@ interface StoredSession {
 
 export class TokenManager {
   private session: StoredSession | null = null;
+  // Internal localStorage key — kept unchanged across the Ghayma rebrand so
+  // existing end-users of apps built on this SDK stay signed in. Do not rename.
   private storageKey = "espace_auth_session";
   private useLocalStorage: boolean;
 

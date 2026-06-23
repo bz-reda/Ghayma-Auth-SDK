@@ -41,7 +41,7 @@ export type {
 
 const DEFAULT_BASE_URL = "https://auth.espace-tech.com";
 
-export class EspaceAuth {
+export class GhaymaAuth {
   private http: HttpClient;
   private tokens: TokenManager;
   private listeners: Set<AuthStateListener> = new Set();
@@ -339,3 +339,6 @@ export class EspaceAuth {
     }, ms);
   }
 }
+
+/** @deprecated use GhaymaAuth */
+export { GhaymaAuth as EspaceAuth };
