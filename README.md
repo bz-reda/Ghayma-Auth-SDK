@@ -1,6 +1,6 @@
-# @espace-tech/auth
+# @ghayma/auth
 
-Client-side authentication SDK for apps built on [Espace-Tech Cloud](https://cloud.espace-tech.com). Handles login, registration, token management, OAuth, and user profile — so you don't have to wire up raw HTTP calls.
+Client-side authentication SDK for apps built on [Ghayma](https://ghayma.dev). Handles login, registration, token management, OAuth, and user profile — so you don't have to wire up raw HTTP calls.
 
 - Zero dependencies (uses native `fetch`)
 - Auto token refresh
@@ -17,9 +17,9 @@ npm install github:bz-reda/ETC-Auth-SDK
 ## Quick Start
 
 ```typescript
-import { EspaceAuth } from "@espace-tech/auth";
+import { GhaymaAuth } from "@ghayma/auth";
 
-const auth = new EspaceAuth({ appSlug: "my-app" });
+const auth = new GhaymaAuth({ appSlug: "my-app" });
 
 // Register
 await auth.register({ email: "user@example.com", password: "securepass123", name: "John" });
@@ -40,9 +40,9 @@ await auth.logout();
 ## Configuration
 
 ```typescript
-const auth = new EspaceAuth({
+const auth = new GhaymaAuth({
   appSlug: "my-app",                               // Required — your Auth App slug
-  baseUrl: "https://auth.espace-tech.com",          // Default
+  baseUrl: "https://auth.ghayma.tech",              // Default
   storage: "memory",                                // "memory" (default) or "localStorage"
   autoRefresh: true,                                // Auto-refresh before expiry (default: true)
 });
@@ -51,7 +51,7 @@ const auth = new EspaceAuth({
 | Option | Type | Default | Description |
 |---|---|---|---|
 | `appSlug` | `string` | — | **Required.** Your Auth App slug from the dashboard |
-| `baseUrl` | `string` | `https://auth.espace-tech.com` | Auth service base URL |
+| `baseUrl` | `string` | `https://auth.ghayma.tech` | Auth service base URL |
 | `storage` | `"memory" \| "localStorage"` | `"memory"` | Token storage strategy |
 | `autoRefresh` | `boolean` | `true` | Auto-refresh tokens before they expire |
 
@@ -288,7 +288,7 @@ unsubscribe();
 All methods throw `AuthError` on failure:
 
 ```typescript
-import { EspaceAuth, AuthError } from "@espace-tech/auth";
+import { GhaymaAuth, AuthError } from "@ghayma/auth";
 
 try {
   await auth.login({ email: "user@example.com", password: "wrong" });
@@ -304,9 +304,9 @@ try {
 ## React Example
 
 ```tsx
-import { EspaceAuth } from "@espace-tech/auth";
+import { GhaymaAuth } from "@ghayma/auth";
 
-const auth = new EspaceAuth({ appSlug: "my-app", storage: "localStorage" });
+const auth = new GhaymaAuth({ appSlug: "my-app", storage: "localStorage" });
 
 function App() {
   const [user, setUser] = useState(null);

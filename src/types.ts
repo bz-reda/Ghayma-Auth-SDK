@@ -1,9 +1,9 @@
 // ==================== Configuration ====================
 
 export interface AuthConfig {
-  /** The app slug from your Espace-Tech Cloud auth app */
+  /** The app slug from your Ghayma auth app */
   appSlug: string;
-  /** Base URL of the auth service. Default: https://auth.espace-tech.com */
+  /** Base URL of the auth service. Default: https://auth.ghayma.tech */
   baseUrl?: string;
   /** Token storage strategy. Default: "memory" */
   storage?: "memory" | "localStorage";
