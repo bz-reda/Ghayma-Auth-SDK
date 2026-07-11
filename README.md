@@ -11,7 +11,7 @@ Client-side authentication SDK for apps built on [Ghayma](https://ghayma.dev). H
 ## Installation
 
 ```bash
-npm install github:bz-reda/ETC-Auth-SDK
+npm install github:bz-reda/Ghayma-Auth-SDK
 ```
 
 ## Quick Start
