@@ -130,6 +130,15 @@ export class GhaymaAuth {
     return this.http.post("/reset-password", params);
   }
 
+  /**
+   * Pre-check a reset token without consuming it, so a custom reset page
+   * can show "link expired" before asking for a new password. Returns the
+   * account email for display. Throws AuthError on invalid/expired tokens.
+   */
+  async verifyResetToken(params: { token: string }): Promise<{ valid: boolean; email: string }> {
+    return this.http.post("/verify-reset-token", params);
+  }
+
   /** Resend the email verification link */
   async resendVerification(params: { email: string }): Promise<{ message: string }> {
     return this.http.post("/resend-verification", params);
