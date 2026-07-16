@@ -20,6 +20,14 @@ export interface User {
   avatar_url?: string;
   email_verified: boolean;
   provider: "email" | "google" | "github";
+  /**
+   * Developer-owned data (roles, plan, tenant id) set by the app's
+   * backend/dashboard — READ-ONLY here. It is also embedded in the JWT
+   * as the `app_metadata` claim, so servers can authorize from the
+   * verified token without calling the auth service. Not to be confused
+   * with `metadata` (updateUser), which the user controls.
+   */
+  app_metadata?: Record<string, unknown>;
   created_at: string;
   last_login_at?: string;
 }
