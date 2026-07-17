@@ -40,6 +40,33 @@ export interface Session {
   user: User;
 }
 
+/**
+ * login() resolves to a Session when no second factor applies, or one of
+ * the pending-2FA shapes: `two_fa_required` (enrolled user — call
+ * verify2FA with the challenge_token) or `two_fa_enrollment_required`
+ * (app enforces 2FA and the user isn't enrolled — run TOTP enrolment
+ * with the enroll_token, which also completes the login).
+ */
+export type LoginResult = Session | TwoFARequired | TwoFAEnrollmentRequired;
+
+export interface TwoFARequired {
+  two_fa_required: true;
+  challenge_token: string;
+  methods: ("totp" | "whatsapp")[];
+  phone_hint?: string;
+}
+
+export interface TwoFAEnrollmentRequired {
+  two_fa_enrollment_required: true;
+  enroll_token: string;
+  methods: ("totp" | "whatsapp")[];
+}
+
+export interface TotpEnrollment {
+  secret: string;
+  otpauth_uri: string;
+}
+
 export interface TokenPair {
   access_token: string;
   refresh_token: string;
