@@ -10,11 +10,15 @@ import type {
   ChangePasswordParams,
   DeleteAccountParams,
   LoginParams,
+  LoginResult,
   OAuthCallbackParams,
   OAuthRedirectParams,
   RegisterParams,
   Session,
   TokenPair,
+  TotpEnrollment,
+  TwoFAEnrollmentRequired,
+  TwoFARequired,
   UpdateUserParams,
   User,
 } from "./types.js";
@@ -30,11 +34,15 @@ export type {
   ChangePasswordParams,
   DeleteAccountParams,
   LoginParams,
+  LoginResult,
   OAuthCallbackParams,
   OAuthRedirectParams,
   RegisterParams,
   Session,
   TokenPair,
+  TotpEnrollment,
+  TwoFAEnrollmentRequired,
+  TwoFARequired,
   UpdateUserParams,
   User,
 };
@@ -79,10 +87,63 @@ export class GhaymaAuth {
   }
 
   /** Log in with email and password */
-  async login(params: LoginParams): Promise<Session> {
-    const data = await this.http.post<Session>("/login", params);
+  async login(params: LoginParams): Promise<LoginResult> {
+    const data = await this.http.post<LoginResult>("/login", params);
+    // Pending-2FA shapes carry no tokens — only a full Session is stored.
+    if ("two_fa_required" in data || "two_fa_enrollment_required" in data) {
+      return data;
+    }
+    this.setSession(data as Session, "SIGNED_IN");
+    return data;
+  }
+
+  // ==================== Two-factor authentication ====================
+
+  /** Complete a pending 2FA login with a TOTP or recovery code. */
+  async verify2FA(params: { challenge_token: string; code: string }): Promise<Session> {
+    const data = await this.http.post<Session>("/2fa/verify", params);
     this.setSession(data, "SIGNED_IN");
     return data;
+  }
+
+  /**
+   * Start TOTP enrolment. Authenticated users need no enroll_token; pass
+   * the one from `two_fa_enrollment_required` on the enforced path.
+   * Render `otpauth_uri` as a QR code for the authenticator app.
+   */
+  async enrollTotp(params?: { enroll_token?: string }): Promise<TotpEnrollment> {
+    return this.http.post("/2fa/totp/enroll", params ?? {});
+  }
+
+  /**
+   * Confirm TOTP with a code from the authenticator. Returns the recovery
+   * codes — THE ONLY TIME they are shown; tell the user to store them.
+   * On the enforced path this also completes the login (session stored).
+   */
+  async confirmTotp(params: { code: string; enroll_token?: string }): Promise<{
+    enabled: boolean;
+    recovery_codes?: string[];
+  } & Partial<Session>> {
+    const data = await this.http.post<{ enabled: boolean; recovery_codes?: string[] } & Partial<Session>>(
+      "/2fa/totp/confirm",
+      params
+    );
+    if (data.access_token && data.refresh_token) {
+      this.setSession(data as Session, "SIGNED_IN");
+    }
+    return data;
+  }
+
+  /** Disable 2FA — requires the password and a currently-valid code. */
+  async disable2FA(params: { password: string; code: string }): Promise<{ message: string }> {
+    await this.ensureToken();
+    return this.http.post("/2fa/disable", params);
+  }
+
+  /** Mint a fresh set of 10 recovery codes, invalidating all previous ones. */
+  async regenerateRecoveryCodes(params: { password: string; code: string }): Promise<{ recovery_codes: string[] }> {
+    await this.ensureToken();
+    return this.http.post("/2fa/recovery/regenerate", params);
   }
 
   /** Log out and revoke the refresh token */
