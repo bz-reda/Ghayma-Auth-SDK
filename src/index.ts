@@ -112,7 +112,11 @@ export class GhaymaAuth {
    * Render `otpauth_uri` as a QR code for the authenticator app.
    */
   async enrollTotp(params?: { enroll_token?: string }): Promise<TotpEnrollment> {
-    return this.http.post("/2fa/totp/enroll", params ?? {});
+    const forced = Boolean(params?.enroll_token);
+    if (!forced) await this.ensureToken();
+    // Server reads the Bearer header first and never falls back to the
+    // enroll_token — a leftover JWT would hijack the enforced path.
+    return this.http.post("/2fa/totp/enroll", params ?? {}, !forced);
   }
 
   /**
@@ -124,9 +128,12 @@ export class GhaymaAuth {
     enabled: boolean;
     recovery_codes?: string[];
   } & Partial<Session>> {
+    const forced = Boolean(params.enroll_token);
+    if (!forced) await this.ensureToken();
     const data = await this.http.post<{ enabled: boolean; recovery_codes?: string[] } & Partial<Session>>(
       "/2fa/totp/confirm",
-      params
+      params,
+      !forced
     );
     if (data.access_token && data.refresh_token) {
       this.setSession(data as Session, "SIGNED_IN");
@@ -137,13 +144,13 @@ export class GhaymaAuth {
   /** Disable 2FA — requires the password and a currently-valid code. */
   async disable2FA(params: { password: string; code: string }): Promise<{ message: string }> {
     await this.ensureToken();
-    return this.http.post("/2fa/disable", params);
+    return this.http.post("/2fa/disable", params, true);
   }
 
   /** Mint a fresh set of 10 recovery codes, invalidating all previous ones. */
   async regenerateRecoveryCodes(params: { password: string; code: string }): Promise<{ recovery_codes: string[] }> {
     await this.ensureToken();
-    return this.http.post("/2fa/recovery/regenerate", params);
+    return this.http.post("/2fa/recovery/regenerate", params, true);
   }
 
   /** Log out and revoke the refresh token */
