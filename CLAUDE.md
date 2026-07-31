@@ -13,8 +13,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - **Build:** `npm run build` (uses tsup, outputs ESM + CJS to `dist/`)
 - **Dev/watch:** `npm run dev`
 - **Type check:** `npm run typecheck`
+- **Test:** `npm test` (builds, then runs `node --test` over `test/*.test.mjs`)
 
-No test framework is configured yet.
+Tests use the Node built-in test runner and a stubbed global `fetch`, and import the **built** `dist/` output — so they assert what actually ships, not just source. No test dependencies; the zero-dependency property covers devDependencies too.
 
 ## Architecture
 
@@ -29,5 +30,7 @@ Four source files in `src/`, single entry point:
 
 - **Token auto-refresh:** Schedules a `setTimeout` 60s before token expiry. `ensureToken()` is called before authenticated requests and triggers refresh if expired (30s buffer).
 - **Auth events:** Listeners receive `AuthEvent` (`SIGNED_IN`, `SIGNED_OUT`, `TOKEN_REFRESHED`, `USER_UPDATED`) + current session. Listener errors are silently caught.
+- **Auth header per call:** `HttpClient.post` defaults to `auth = false` (most POST routes are public) — every method hitting a JWT-protected route must pass `true` as the 3rd arg. `get`/`patch`/`del` default to `true`.
+- **TOTP enrolment is dual-auth:** `/2fa/totp/enroll` and `/2fa/totp/confirm` are public routes that authenticate inside the handler via either a Bearer JWT (voluntary) or a `forced_enroll` `enroll_token` in the body (enforced login, no session yet). The server checks the Bearer header **first and never falls back** to the token, so the SDK attaches the JWT only when no `enroll_token` was passed.
 - **OAuth flow:** Server redirects back with tokens in URL fragment (`#access_token=...`). `handleOAuthFragment()` parses them and cleans up the URL.
 - **Dual output:** tsup builds both ESM (`.js`) and CJS (`.cjs`) with `.d.ts` declarations. Package uses conditional exports.
