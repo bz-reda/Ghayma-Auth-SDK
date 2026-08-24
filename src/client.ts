@@ -5,8 +5,9 @@ import { TokenManager } from "./token.js";
 const SERVER_KEY_HEADER = "X-Ghayma-Server-Key";
 const CLIENT_IP_HEADER = "X-Ghayma-Client-IP";
 
-// IPv4/IPv6 literals, optionally with a zone id. Rejects a comma-joined
-// `x-forwarded-for` chain, "unknown", and anything with control characters.
+// Shape guard, not a full validator: the characters an IPv4/IPv6 literal can
+// use, plus an optional zone id. Enough to drop a comma-joined
+// `x-forwarded-for` chain, "unknown", or anything carrying control characters.
 const IP_LITERAL = /^[0-9a-fA-F.:]+(%[0-9a-zA-Z._-]+)?$/;
 
 /**
