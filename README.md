@@ -45,6 +45,7 @@ const auth = new GhaymaAuth({
   baseUrl: "https://auth.ghayma.tech",              // Default
   storage: "memory",                                // "memory" (default) or "localStorage"
   autoRefresh: true,                                // Auto-refresh before expiry (default: true)
+  serverKey: process.env.MY_KEY,                    // Server-side only — see below
 });
 ```
 
@@ -54,11 +55,53 @@ const auth = new GhaymaAuth({
 | `baseUrl` | `string` | `https://auth.ghayma.tech` | Auth service base URL |
 | `storage` | `"memory" \| "localStorage"` | `"memory"` | Token storage strategy |
 | `autoRefresh` | `boolean` | `true` | Auto-refresh tokens before they expire |
+| `serverKey` | `string` | from env | **Server-side only.** Lets this client forward the end user's IP — [see below](#server-side-usage) |
 
 ### Storage Options
 
 - **`"memory"`** — tokens lost on page refresh. Best for SSR (Next.js, Nuxt) where you manage tokens in cookies server-side.
 - **`"localStorage"`** — tokens persist across refreshes. Best for SPAs (React, Vue).
+
+## Server-Side Usage
+
+When your own server calls the auth service (Next.js route handlers, server actions), every request arrives from one IP — so all of your users share a single rate-limit bucket and the first sign-up of the hour can get a `429`.
+
+The fix is a **server key**: a per-app credential (`ghs_…`) that lets the service trust an end-user IP your server forwards, and bucket the rate limit by that address instead. On Ghayma-hosted apps the key is injected into the pod automatically as `ESPACETECH_AUTH_SERVER_KEY_<SLUG>` (uppercased slug, non-alphanumerics → `_`, e.g. `ESPACETECH_AUTH_SERVER_KEY_MY_APP`), plus a bare `ESPACETECH_AUTH_SERVER_KEY` when the project has exactly one auth app. The SDK picks those up on its own; pass `serverKey` explicitly only when hosting elsewhere.
+
+> **The key is a secret.** It is what proves a forwarded IP is trustworthy, so it must never reach a browser bundle — constructing a client with a `serverKey` in a browser throws, and the SDK never reads environment variables outside Node.
+
+```typescript
+// app/api/register/route.ts
+import { GhaymaAuth, AuthError } from "@ghayma/auth";
+
+export async function POST(req: Request) {
+  // Per request: a module-level client would share one in-memory session
+  // across users. autoRefresh is pointless for a one-shot server call.
+  const auth = new GhaymaAuth({ appSlug: "my-app", autoRefresh: false });
+  const { email, password } = await req.json();
+
+  // Your own edge (the Ghayma ingress, Cloudflare) sets x-forwarded-for.
+  const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0] ?? undefined;
+
+  try {
+    const session = await auth.register({ email, password }, { clientIp });
+    return Response.json(session);
+  } catch (err) {
+    if (err instanceof AuthError && err.code === "rate_limited") {
+      const wait = err.retryAfter ?? 60;
+      return Response.json(
+        { error: `Too many attempts — try again in ${wait}s` },
+        { status: 429, headers: { "Retry-After": String(wait) } }
+      );
+    }
+    throw err;
+  }
+}
+```
+
+`clientIp` is accepted by the operations the service rate-limits per IP: `register`, `login`, `forgotPassword`, `resetPassword`, `verifyResetToken`, and `resendVerification`.
+
+Both headers travel together or not at all — a `clientIp` without a resolved server key sends nothing (the service would ignore it anyway) and the request goes through rate-limited by your server's IP. The value must be a single IP literal, so split the `x-forwarded-for` chain yourself; a full chain is dropped rather than forwarded.
 
 ## Authentication
 
@@ -294,12 +337,16 @@ try {
   await auth.login({ email: "user@example.com", password: "wrong" });
 } catch (err) {
   if (err instanceof AuthError) {
-    console.error(err.message); // "invalid email or password"
-    console.error(err.status);  // 401
-    console.error(err.code);    // "auth_error"
+    console.error(err.message);    // "invalid email or password"
+    console.error(err.status);     // 401
+    console.error(err.code);       // "auth_error"
+    console.error(err.retryAfter); // undefined — seconds to wait on a 429
   }
 }
 ```
+
+Rate-limited requests come back as `status` `429` with `code` `"rate_limited"`, and `retryAfter` carries the server's `Retry-After` delay in seconds (`undefined` if the response had no such header) — enough to tell the user exactly how long to wait.
+
 
 ## React Example
 

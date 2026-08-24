@@ -7,12 +7,15 @@ const APP_SLUG = "testapp";
 /**
  * Replace global fetch with a recorder. `routes` maps a path suffix
  * (e.g. "/2fa/disable") to a response body or a function returning one.
+ * A route may set `status` and `__headers` (extra response headers, e.g.
+ * `Retry-After`); everything else is the JSON body. Pass `slug` when the
+ * client under test uses an app slug other than the default.
  * Returns the array of recorded requests.
  */
-export function stubFetch(routes) {
+export function stubFetch(routes, slug = APP_SLUG) {
   const calls = [];
   globalThis.fetch = async (url, init = {}) => {
-    const path = new URL(url).pathname.replace(`/v1/${APP_SLUG}`, "");
+    const path = new URL(url).pathname.replace(`/v1/${slug}`, "");
     const call = {
       url,
       path,
@@ -26,11 +29,11 @@ export function stubFetch(routes) {
     if (route === undefined) {
       throw new Error(`unexpected request to ${path}`);
     }
-    const { status = 200, ...body } =
+    const { status = 200, __headers, ...body } =
       typeof route === "function" ? route(call) : route;
     return new Response(JSON.stringify(body), {
       status,
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...__headers },
     });
   };
   return calls;

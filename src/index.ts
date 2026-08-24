@@ -14,6 +14,7 @@ import type {
   OAuthCallbackParams,
   OAuthRedirectParams,
   RegisterParams,
+  RequestOptions,
   Session,
   TokenPair,
   TotpEnrollment,
@@ -38,6 +39,7 @@ export type {
   OAuthCallbackParams,
   OAuthRedirectParams,
   RegisterParams,
+  RequestOptions,
   Session,
   TokenPair,
   TotpEnrollment,
@@ -48,6 +50,35 @@ export type {
 };
 
 const DEFAULT_BASE_URL = "https://auth.ghayma.tech";
+const SERVER_KEY_ENV = "ESPACETECH_AUTH_SERVER_KEY";
+
+/** `my-app.2` → `MY_APP_2` — the suffix Ghayma injects server keys under. */
+function envSuffix(appSlug: string): string {
+  return appSlug.toUpperCase().replace(/[^A-Z0-9]/g, "_");
+}
+
+/**
+ * Explicit option → `ESPACETECH_AUTH_SERVER_KEY_<SLUG>` → bare
+ * `ESPACETECH_AUTH_SERVER_KEY`. Browsers get no key at all: env is never
+ * read there, and an explicit one is a bug worth failing loudly on.
+ */
+function resolveServerKey(appSlug: string, explicit?: string): string | null {
+  if (typeof window !== "undefined") {
+    if (explicit) {
+      throw new Error(
+        "serverKey must never ship to browsers — create this client only in server code (a Next.js route handler, server action, or API route)."
+      );
+    }
+    return null;
+  }
+
+  if (explicit) return explicit;
+
+  const env = (globalThis as { process?: { env?: Record<string, string | undefined> } }).process?.env;
+  if (!env) return null;
+
+  return env[`${SERVER_KEY_ENV}_${envSuffix(appSlug)}`] || env[SERVER_KEY_ENV] || null;
+}
 
 export class GhaymaAuth {
   private http: HttpClient;
@@ -67,7 +98,12 @@ export class GhaymaAuth {
     this.baseUrl = (config.baseUrl ?? DEFAULT_BASE_URL).replace(/\/+$/, "");
     this.autoRefresh = config.autoRefresh !== false;
     this.tokens = new TokenManager(config.storage ?? "memory");
-    this.http = new HttpClient(this.appSlug, this.baseUrl, this.tokens);
+    this.http = new HttpClient(
+      this.appSlug,
+      this.baseUrl,
+      this.tokens,
+      resolveServerKey(this.appSlug, config.serverKey)
+    );
 
     // If restoring from localStorage with auto-refresh, schedule a refresh
     if (this.tokens.hasSession() && this.autoRefresh) {
@@ -77,18 +113,30 @@ export class GhaymaAuth {
 
   // ==================== Auth ====================
 
-  /** Register a new user with email and password */
-  async register(params: RegisterParams): Promise<Session> {
-    const data = await this.http.post<Session>("/register", params);
+  /**
+   * Register a new user with email and password.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
+   */
+  async register(params: RegisterParams, options?: RequestOptions): Promise<Session> {
+    const data = await this.http.post<Session>("/register", params, false, options);
     if (data.access_token) {
       this.setSession(data, "SIGNED_IN");
     }
     return data;
   }
 
-  /** Log in with email and password */
-  async login(params: LoginParams): Promise<LoginResult> {
-    const data = await this.http.post<LoginResult>("/login", params);
+  /**
+   * Log in with email and password.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
+   */
+  async login(params: LoginParams, options?: RequestOptions): Promise<LoginResult> {
+    const data = await this.http.post<LoginResult>("/login", params, false, options);
     // Pending-2FA shapes carry no tokens — only a full Session is stored.
     if ("two_fa_required" in data || "two_fa_enrollment_required" in data) {
       return data;
@@ -188,28 +236,59 @@ export class GhaymaAuth {
     }
   }
 
-  /** Request a password reset email */
-  async forgotPassword(params: { email: string }): Promise<{ message: string }> {
-    return this.http.post("/forgot-password", params);
+  /**
+   * Request a password reset email.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
+   */
+  async forgotPassword(params: { email: string }, options?: RequestOptions): Promise<{ message: string }> {
+    return this.http.post("/forgot-password", params, false, options);
   }
 
-  /** Reset password using a token from the reset email */
-  async resetPassword(params: { token: string; password: string }): Promise<{ message: string }> {
-    return this.http.post("/reset-password", params);
+  /**
+   * Reset password using a token from the reset email.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
+   */
+  async resetPassword(
+    params: { token: string; password: string },
+    options?: RequestOptions
+  ): Promise<{ message: string }> {
+    return this.http.post("/reset-password", params, false, options);
   }
 
   /**
    * Pre-check a reset token without consuming it, so a custom reset page
    * can show "link expired" before asking for a new password. Returns the
    * account email for display. Throws AuthError on invalid/expired tokens.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
    */
-  async verifyResetToken(params: { token: string }): Promise<{ valid: boolean; email: string }> {
-    return this.http.post("/verify-reset-token", params);
+  async verifyResetToken(
+    params: { token: string },
+    options?: RequestOptions
+  ): Promise<{ valid: boolean; email: string }> {
+    return this.http.post("/verify-reset-token", params, false, options);
   }
 
-  /** Resend the email verification link */
-  async resendVerification(params: { email: string }): Promise<{ message: string }> {
-    return this.http.post("/resend-verification", params);
+  /**
+   * Resend the email verification link.
+   *
+   * @param options.clientIp — the end user's IP, forwarded so the service
+   *   rate-limits per end user instead of per calling server. Needs a
+   *   `serverKey`; without one it is ignored and nothing extra is sent.
+   */
+  async resendVerification(
+    params: { email: string },
+    options?: RequestOptions
+  ): Promise<{ message: string }> {
+    return this.http.post("/resend-verification", params, false, options);
   }
 
   // ==================== User ====================
