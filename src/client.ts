@@ -1,6 +1,23 @@
 import { AuthError } from "./types.js";
 import { TokenManager } from "./token.js";
 
+/**
+ * `Retry-After` is either a delay in seconds or an HTTP-date; both are
+ * normalised to whole seconds. Returns undefined when absent or unparsable.
+ */
+function parseRetryAfter(value: string | null): number | undefined {
+  const raw = value?.trim();
+  if (!raw) return undefined;
+
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.ceil(seconds));
+
+  const at = Date.parse(raw);
+  if (!Number.isNaN(at)) return Math.max(0, Math.ceil((at - Date.now()) / 1000));
+
+  return undefined;
+}
+
 export class HttpClient {
   private baseUrl: string;
   private appSlug: string;
@@ -58,7 +75,7 @@ export class HttpClient {
         } catch {
           // response wasn't JSON
         }
-        throw new AuthError(message, resp.status, code);
+        throw new AuthError(message, resp.status, code, parseRetryAfter(resp.headers.get("Retry-After")));
       }
 
       return (await resp.json()) as T;

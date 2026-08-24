@@ -137,11 +137,18 @@ export type AuthStateListener = (event: AuthEvent, session: Session | null) => v
 export class AuthError extends Error {
   public readonly status: number;
   public readonly code: string;
+  /**
+   * Seconds to wait before retrying, read from the response's `Retry-After`
+   * header. Present on rate-limited responses (`status` 429, `code`
+   * `"rate_limited"`); `undefined` when the server sent no header.
+   */
+  public readonly retryAfter?: number;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, retryAfter?: number) {
     super(message);
     this.name = "AuthError";
     this.status = status;
     this.code = code ?? "auth_error";
+    this.retryAfter = retryAfter;
   }
 }
