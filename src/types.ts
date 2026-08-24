@@ -9,6 +9,36 @@ export interface AuthConfig {
   storage?: "memory" | "localStorage";
   /** Auto-refresh tokens before they expire. Default: true */
   autoRefresh?: boolean;
+  /**
+   * This app's server key (`ghs_…`), the credential that lets the auth
+   * service trust an end-user IP forwarded with `clientIp` instead of
+   * rate-limiting everything behind your server's own address. It is a
+   * secret: pass it only in server code — constructing a client with a
+   * `serverKey` in a browser throws, since a leaked key would let anyone
+   * spoof the address a rate limit is charged to.
+   *
+   * On Ghayma-hosted apps the key is injected into the pod as
+   * `ESPACETECH_AUTH_SERVER_KEY_<SLUG>` (and as `ESPACETECH_AUTH_SERVER_KEY`
+   * when the project has exactly one auth app) and picked up automatically,
+   * so you rarely need to set this by hand.
+   */
+  serverKey?: string;
+}
+
+/** Per-call options for the operations the auth service rate-limits by IP. */
+export interface RequestOptions {
+  /**
+   * The end user's IP address, forwarded to the auth service so it charges
+   * the rate limit to that address rather than to your server — without it,
+   * every user of a server-side integration shares one bucket. The service
+   * only honours it from a caller holding a valid `serverKey`, so the header
+   * is omitted entirely when no key was resolved (the request still runs,
+   * just rate-limited by your server's IP).
+   *
+   * Must be a single IP literal, not a whole `x-forwarded-for` chain;
+   * anything else is dropped rather than sent.
+   */
+  clientIp?: string;
 }
 
 // ==================== Auth responses ====================

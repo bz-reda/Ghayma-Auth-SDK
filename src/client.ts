@@ -1,5 +1,13 @@
 import { AuthError } from "./types.js";
+import type { RequestOptions } from "./types.js";
 import { TokenManager } from "./token.js";
+
+const SERVER_KEY_HEADER = "X-Ghayma-Server-Key";
+const CLIENT_IP_HEADER = "X-Ghayma-Client-IP";
+
+// IPv4/IPv6 literals, optionally with a zone id. Rejects a comma-joined
+// `x-forwarded-for` chain, "unknown", and anything with control characters.
+const IP_LITERAL = /^[0-9a-fA-F.:]+(%[0-9a-zA-Z._-]+)?$/;
 
 /**
  * `Retry-After` is either a delay in seconds or an HTTP-date; both are
@@ -21,12 +29,14 @@ function parseRetryAfter(value: string | null): number | undefined {
 export class HttpClient {
   private baseUrl: string;
   private appSlug: string;
+  private serverKey: string | null;
   public tokens: TokenManager;
 
-  constructor(appSlug: string, baseUrl: string, tokens: TokenManager) {
+  constructor(appSlug: string, baseUrl: string, tokens: TokenManager, serverKey: string | null = null) {
     this.appSlug = appSlug;
     this.baseUrl = baseUrl.replace(/\/+$/, "");
     this.tokens = tokens;
+    this.serverKey = serverKey;
   }
 
   private url(path: string): string {
@@ -40,6 +50,7 @@ export class HttpClient {
       body?: unknown;
       auth?: boolean;
       timeout?: number;
+      clientIp?: string;
     }
   ): Promise<T> {
     const headers: Record<string, string> = {
@@ -51,6 +62,14 @@ export class HttpClient {
       if (token) {
         headers["Authorization"] = `Bearer ${token}`;
       }
+    }
+
+    // Both headers or neither: the service only honours a forwarded IP from a
+    // caller that proves itself with the server key.
+    const clientIp = options?.clientIp?.trim();
+    if (this.serverKey && clientIp && IP_LITERAL.test(clientIp)) {
+      headers[SERVER_KEY_HEADER] = this.serverKey;
+      headers[CLIENT_IP_HEADER] = clientIp;
     }
 
     const controller = new AbortController();
@@ -94,8 +113,8 @@ export class HttpClient {
     }
   }
 
-  post<T>(path: string, body?: unknown, auth = false): Promise<T> {
-    return this.request<T>("POST", path, { body, auth });
+  post<T>(path: string, body?: unknown, auth = false, options?: RequestOptions): Promise<T> {
+    return this.request<T>("POST", path, { body, auth, clientIp: options?.clientIp });
   }
 
   get<T>(path: string, auth = true): Promise<T> {
