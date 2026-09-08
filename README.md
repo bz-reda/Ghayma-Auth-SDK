@@ -1,5 +1,14 @@
 # @ghayma/auth
 
+> **Deprecated.** `@ghayma/auth` is now an alias of [`@ghayma/sdk/client`](https://docs.ghayma.cloud/sdk/auth-client). It keeps working unchanged, but new code should import from `@ghayma/sdk/client`; this package will not receive features of its own.
+>
+> ```ts
+> // before
+> import { GhaymaAuth } from "@ghayma/auth";
+> // after
+> import { GhaymaAuth } from "@ghayma/sdk/client";
+> ```
+
 Client-side authentication SDK for apps built on [Ghayma](https://ghayma.dev). Handles login, registration, token management, OAuth, and user profile — so you don't have to wire up raw HTTP calls.
 
 - Zero dependencies (uses native `fetch`)
@@ -11,7 +20,7 @@ Client-side authentication SDK for apps built on [Ghayma](https://ghayma.dev). H
 ## Installation
 
 ```bash
-npm install github:bz-reda/Ghayma-Auth-SDK
+npm install @ghayma/sdk
 ```
 
 ## Quick Start
