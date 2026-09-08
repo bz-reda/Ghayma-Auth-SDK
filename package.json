@@ -1,8 +1,8 @@
 {
   "name": "@ghayma/auth",
-  "version": "0.7.0",
-  "description": "Client-side auth SDK for apps built on Ghayma Auth",
-  "author": "Ghayma <hello@ghayma.dev>",
+  "version": "0.8.0",
+  "description": "Deprecated alias of @ghayma/sdk/client \u2014 the browser auth SDK for apps built on Ghayma",
+  "author": "Ghayma <hello@ghayma.cloud>",
   "license": "MIT",
   "type": "module",
   "main": "./dist/index.cjs",
@@ -50,8 +50,11 @@
     "type": "git",
     "url": "https://github.com/bz-reda/Ghayma-Auth-SDK"
   },
-  "homepage": "https://docs.ghayma.dev",
+  "homepage": "https://docs.ghayma.cloud/sdk/auth-client",
   "engines": {
     "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@ghayma/sdk": "^1.1.0"
   }
 }
