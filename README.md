@@ -75,7 +75,7 @@ const auth = new GhaymaAuth({
 
 When your own server calls the auth service (Next.js route handlers, server actions), every request arrives from one IP — so all of your users share a single rate-limit bucket and the first sign-up of the hour can get a `429`.
 
-The fix is a **server key**: a per-app credential (`ghs_…`) that lets the service trust an end-user IP your server forwards, and bucket the rate limit by that address instead. On Ghayma-hosted apps the key is injected into the pod automatically as `ESPACETECH_AUTH_SERVER_KEY_<SLUG>` (uppercased slug, non-alphanumerics → `_`, e.g. `ESPACETECH_AUTH_SERVER_KEY_MY_APP`), plus a bare `ESPACETECH_AUTH_SERVER_KEY` when the project has exactly one auth app. The SDK picks those up on its own; pass `serverKey` explicitly only when hosting elsewhere.
+The fix is a **server key**: a per-app credential (`ghs_…`) that lets the service trust an end-user IP your server forwards, and bucket the rate limit by that address instead. On Ghayma-hosted apps the key is injected into the pod automatically as `GHAYMA_AUTH_SERVER_KEY_<SLUG>` (uppercased slug, non-alphanumerics → `_`, e.g. `GHAYMA_AUTH_SERVER_KEY_MY_APP`), plus a bare `GHAYMA_AUTH_SERVER_KEY` for the oldest auth app connected to the site. The SDK picks those up on its own, the slug-scoped name first; pass `serverKey` explicitly only when hosting elsewhere.
 
 > **The key is a secret.** It is what proves a forwarded IP is trustworthy, so it must never reach a browser bundle — constructing a client with a `serverKey` in a browser throws, and the SDK never reads environment variables outside Node.
 
