@@ -1,6 +1,6 @@
 {
   "name": "@ghayma/auth",
-  "version": "0.8.0",
+  "version": "0.8.1",
   "description": "Deprecated alias of @ghayma/sdk/client \u2014 the browser auth SDK for apps built on Ghayma",
   "author": "Ghayma <hello@ghayma.cloud>",
   "license": "MIT",

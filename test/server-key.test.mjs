@@ -45,8 +45,8 @@ const serverKeyHeader = (headers) => headers["X-Ghayma-Server-Key"];
 const clientIpHeader = (headers) => headers["X-Ghayma-Client-IP"];
 
 // ==================== Server key resolution ====================
-// Ghayma injects the key into hosted pods as ESPACETECH_AUTH_SERVER_KEY_<SLUG>,
-// plus the bare name when the project has exactly one auth app.
+// The names Ghayma injected before GHAYMA_AUTH_SERVER_KEY[_<SLUG>]. Every
+// @ghayma/sdk 1.x release reads them, so the alias keeps these as compatibility.
 
 describe("server key resolution (Node)", () => {
   test("explicit option wins over both env vars", async () => {
